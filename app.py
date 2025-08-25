@@ -8,7 +8,7 @@ import seaborn as sns
 # -------------------------------
 # Load Model
 # -------------------------------
-model = joblib.load("salary.pkl")
+model = joblib.load("salary_model.pkl")
 
 # Page config
 st.set_page_config(page_title="💼 Employer Salary Prediction", layout="wide")
@@ -106,3 +106,4 @@ if st.button("🔮 Predict Salary"):
 # -------------------------------
 st.markdown("---")
 st.markdown("💻 Developed by **Yuvaraja P | Paavai Engineering College**")
+
