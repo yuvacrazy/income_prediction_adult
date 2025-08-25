@@ -1,73 +1,96 @@
 import streamlit as st
-import pandas as pd
-import numpy as np
 import joblib
+import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
 
-# -------------------------------
-# Load Model
-# -------------------------------
-model = joblib.load("salary_model.pkl")
+# Load model & encoders
+model = joblib.load("salary.pkl")
+encoders = joblib.load("encoders.pkl")
 
-# Page config
-st.set_page_config(page_title="💼 Employer Salary Prediction", layout="wide")
+# ----------------- UI Design -----------------
+st.set_page_config(page_title="💼 Employer Salary Prediction", page_icon="💰", layout="centered")
 
-# -------------------------------
-# Sidebar
-# -------------------------------
-st.sidebar.title("⚙️ Settings")
-theme = st.sidebar.radio("Choose Theme", ["Light", "Dark"])
-if theme == "Dark":
-    st.markdown(
-        """
-        <style>
-        body { background-color: #0e1117; color: #fafafa; }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
+st.title("💼 Employer Salary Prediction App")
+st.markdown("### Project by **Yuvaraja P** (Final Year CSE - IoT, Paavai Engineering College)")
+st.write("Fill in the details below and click **Predict Salary** to see the result.")
 
-# -------------------------------
-# Tabs
-# -------------------------------
-tab1, tab2, tab3 = st.tabs(["🏠 Home", "🔮 Predict", "📊 Visualize"])
+st.markdown("---")
 
-# -------------------------------
-# Home Tab
-# -------------------------------
-with tab1:
-    st.title("💼 Employer Salary Prediction System")
-    st.markdown("###### Project by **Yuvaraja P | Final Year CSE - IoT**")
-    st.write(
-        """
-        Welcome to the **Employer Salary Prediction System** 🚀  
-        This project uses **Machine Learning** to predict whether a person’s salary falls into a certain category based on their profile details.  
+# ----------------- Input Form -----------------
+with st.form("prediction_form"):
+    st.subheader("📋 Enter Your Details")
 
-        ### Features:
-        - Clean UI with modern dashboard design  
-        - Interactive input form for salary prediction  
-        - Visual insights with charts & feature importance  
-
-        Navigate to **Predict Tab** to try it out!
-        """
-    )
-    st.success("Tip: Use sidebar to change theme 🌙")
-
-# -------------------------------
-# Predict Tab
-# -------------------------------
-with tab2:
-    st.header("🔮 Salary Prediction")
-
-    col1, col2 = st.columns([1, 1])
+    col1, col2 = st.columns(2)
 
     with col1:
-        st.subheader("📌 Enter your details")
+        age = st.number_input("Age", 17, 100, 25)
+        gender = st.selectbox("Gender", ["Male", "Female"])
+        education = st.selectbox("Education", ["10th", "12th", "Bachelors", "Masters", "PhD"])
+        marital_status = st.selectbox("Marital Status", ["Single", "Married", "Divorced"])
 
-        age = st.slider("Age", 18, 70, 25)
-        education = st.selectbox("Education Level", ["10th", "12th", "Diploma", "Bachelors", "Masters", "PhD"])
-        occupation = st.text_input("Occupation (e.g., Engineer, Teacher)")
-        hours = st.slider("Hours worked per week", 1, 100, 40)
+    with col2:
+        occupation = st.selectbox("Occupation", ["Tech", "Management", "Clerical", "Sales", "Other"])
+        workclass = st.selectbox("Workclass", ["Private", "Self-Employed", "Government", "Other"])
+        hours_per_week = st.slider("Hours per Week", 1, 100, 40)
+        country = st.selectbox("Country", ["United States", "India", "Other"])
 
+    # Submit Button
+    submit = st.form_submit_button("🔮 Predict Salary")
 
+# ----------------- Prediction Section -----------------
+if submit:
+    try:
+        # Encode categorical inputs
+        gender_enc = encoders["gender"].transform([gender])[0]
+        education_enc = encoders["education"].transform([education])[0]
+        marital_enc = encoders["marital_status"].transform([marital_status])[0]
+        occupation_enc = encoders["occupation"].transform([occupation])[0]
+        workclass_enc = encoders["workclass"].transform([workclass])[0]
+        country_enc = encoders["country"].transform([country])[0]
+
+        # Arrange input
+        X_input = np.array([[age, hours_per_week, gender_enc, education_enc,
+                             marital_enc, occupation_enc, workclass_enc, country_enc]])
+
+        # Prediction
+        pred = model.predict(X_input)[0]
+        st.success(f"💰 Estimated Salary Category: **{pred}**")
+
+        # ----------------- Visualization 1: Feature Values -----------------
+        st.subheader("📊 Feature Contribution Overview")
+
+        feature_names = ["Age", "Hours/Week", "Gender", "Education",
+                         "Marital Status", "Occupation", "Workclass", "Country"]
+        input_values = [age, hours_per_week, gender_enc, education_enc,
+                        marital_enc, occupation_enc, workclass_enc, country_enc]
+
+        df_features = pd.DataFrame({"Feature": feature_names, "Value": input_values})
+
+        fig, ax = plt.subplots()
+        ax.barh(df_features["Feature"], df_features["Value"], color="skyblue")
+        ax.set_xlabel("Encoded Value / Numeric Input")
+        ax.set_title("Input Features Overview")
+        st.pyplot(fig)
+
+        # ----------------- Visualization 2: Prediction Probability -----------------
+        if hasattr(model, "predict_proba"):
+            st.subheader("📈 Prediction Probability")
+
+            probs = model.predict_proba(X_input)[0]
+            df_probs = pd.DataFrame({
+                "Category": model.classes_,
+                "Probability": probs
+            })
+
+            fig2, ax2 = plt.subplots()
+            ax2.bar(df_probs["Category"], df_probs["Probability"], color=["#4CAF50", "#2196F3"])
+            ax2.set_ylabel("Probability")
+            ax2.set_title("Confidence in Prediction")
+            st.pyplot(fig2)
+
+    except Exception as e:
+        st.error(f"⚠️ Error while predicting: {e}")
+
+st.markdown("---")
+st.markdown("👨‍💻 Developed by **Yuvaraja P** | Final Year CSE (IoT) | Paavai Engineering College")
