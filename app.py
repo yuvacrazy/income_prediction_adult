@@ -69,4 +69,5 @@ with tab2:
         education = st.selectbox("Education Level", ["10th", "12th", "Diploma", "Bachelors", "Masters", "PhD"])
         occupation = st.text_input("Occupation (e.g., Engineer, Teacher)")
         hours = st.slider("Hours worked per week", 1, 100, 40)
-        g
+
+
