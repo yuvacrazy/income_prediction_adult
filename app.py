@@ -5,7 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Load model & encoders
-model = joblib.load("salary.pkl")
+model = joblib.load("salary_model.pkl")
 encoders = joblib.load("encoders.pkl")
 
 # ----------------- UI Design -----------------
@@ -94,3 +94,4 @@ if submit:
 
 st.markdown("---")
 st.markdown("👨‍💻 Developed by **Yuvaraja P** | Final Year CSE (IoT) | Paavai Engineering College")
+
